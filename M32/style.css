@@ -3,3 +3,15 @@
     margin-left: auto;
     margin-right: auto;
 }
+
+#scoreboard {
+    position: fixed;
+    top: 2.5vw;
+    right: 2.5vw;
+}
+
+#time {
+    position: fixed;
+    top: 2.5vw;
+    left: 2.5vw;
+}
