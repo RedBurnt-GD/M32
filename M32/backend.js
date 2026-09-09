@@ -10,6 +10,8 @@ var pointSpawnTime = 1250 //Time a point spawns in ms
 
 var pointEntityLimit = 16 //Max amount of points on screen
 
+var allow3Players = true //Allows a third player (WASD = IJKL)
+
 //Calls the canvas and elements onto JS
 
 var mainMap = document.getElementById("map");
@@ -42,14 +44,18 @@ var pointPosition = []
 
 var square = [7, 7] 
 var cube = [24, 24]
+var teseract = [-32, -32]
 
+if (allow3Players == true) {
+    var teseract = [24, 7]
+}
 //Direction square and cube are facing (WASD = 0123)
 
-var direction = [2, 0]
+var direction = [2, 0, 0]
 
 //Points score
 
-var pointScore = [0, 0]
+var pointScore = [0, 0, 0]
 
 //Boolean to see if a player has made a move
 
@@ -108,13 +114,48 @@ function drawPlayers() {
     m.fillRect(square[0] * tileSpace + 2, square[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
     m.fillStyle = "#FF0000"
     m.fillRect(cube[0] * tileSpace + 2, cube[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
+    m.fillStyle = "#0000FF"
+    m.fillRect(teseract[0] * tileSpace + 2, teseract[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
 
     //Case where both players are in the same tile
-    
-    if (square[0] == cube[0] && square[1] == cube[1]) {
+    if ((square[0] == cube[0] && cube[0] == teseract[0]) && (square[1] == cube[1] && cube[1] == teseract[1])) {
         if (canTouch == true) {
-            m.fillStyle = "#0000FF"
+            m.fillStyle = "#FFFFFF"
             m.fillRect(square[0] * tileSpace + 2, square[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
+        }
+        else {
+            square = [7, 7];
+            cube = [24, 24];
+            teseract = [24, 7];
+            drawMap()
+        }
+    }
+    else if (square[0] == cube[0] && square[1] == cube[1]) {
+        if (canTouch == true) {
+            m.fillStyle = "#FFFF00"
+            m.fillRect(square[0] * tileSpace + 2, square[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
+        }
+        else {
+            square = [7, 7];
+            cube = [24, 24];
+            drawMap()
+        }
+    }
+    else if (square[0] == teseract[0] && square[1] == teseract[1]) {
+        if (canTouch == true) {
+            m.fillStyle = "#FF00FF"
+            m.fillRect(square[0] * tileSpace + 2, square[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
+        }
+        else {
+            square = [7, 7];
+            cube = [24, 24];
+            drawMap()
+        }
+    }
+    else if (teseract[0] == cube[0] && teseract[1] == cube[1]) {
+        if (canTouch == true) {
+            m.fillStyle = "#00FFFF"
+            m.fillRect(cube[0] * tileSpace + 2, cube[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
         }
         else {
             square = [7, 7];
@@ -130,7 +171,7 @@ function drawPlayers() {
 //Helps see in which direction you're going (Super unoptimized btw)
 
 function drawHelmet() {
-    m.fillStyle = "#008000"
+    m.fillStyle = "#0000FF"
 
     switch (direction[0]) {
     case 0:
@@ -147,7 +188,7 @@ function drawHelmet() {
         break;
     }
 
-    m.fillStyle = "#800000"
+    m.fillStyle = "#00FF00"
     switch (direction[1]) {
         case 0:
             m.fillRect(cube[0] * tileSpace + 4, cube[1] * tileSpace + 4, tileSpace - 6, 2)
@@ -160,7 +201,23 @@ function drawHelmet() {
             break;
         case 3:
             m.fillRect(cube[0] * tileSpace + (tileSpace - 4), cube[1] * tileSpace + 4, 2, tileSpace - 6)
-            break
+            break;
+    }
+
+    m.fillStyle = "#FF0000"
+    switch (direction[2]) {
+        case 0:
+            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + 4, tileSpace - 6, 2)
+            break;
+        case 1:
+            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + 4, 2, tileSpace - 6)
+            break;
+        case 2:
+            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + (tileSpace - 4), tileSpace - 6, 2)
+            break;
+        case 3:
+            m.fillRect(teseract[0] * tileSpace + (tileSpace - 4), teseract[1] * tileSpace + 4, 2, tileSpace - 6)
+            break;
     }
 }
 
@@ -192,6 +249,22 @@ function playerMovement() {
         case "KeyD":
             square[0] += 1
             direction[0] = 3
+            break;
+        case "KeyI":
+            teseract[1] -= 1
+            direction[2] = 0
+            break;
+        case "KeyJ":
+            teseract[0] -= 1
+            direction[2] = 1
+            break;
+        case "KeyK":
+            teseract[1] += 1
+            direction[2] = 2
+            break;
+        case "KeyL":
+            teseract[0] += 1
+            direction[2] = 3
             break;
         case "ArrowUp":
             cube[1] -= 1
@@ -251,7 +324,7 @@ function movementLogic() {
         square[0] = 0
     }
 
-        if (cube[1] >= 0 && cube[1] < 32) {
+    if (cube[1] >= 0 && cube[1] < 32) {
         //Nothing xD
     }
     else if (cube[1] >= 32) {
@@ -279,6 +352,36 @@ function movementLogic() {
         cube[0] = 0
     }
 
+    if (allow3Players == true) { 
+        if (teseract[1] >= 0 && teseract[1] < 32) {
+            //Nothing xD
+        }
+        else if (teseract[1] >= 32) {
+            teseract[1] = teseract[1] % 32
+        }
+        else if (teseract[1] < 0 && teseract[1] > -32) {
+            teseract[1] += 32
+        }
+        else {
+            console.log("Weird bug (T, 1)")
+            teseract[1] = 0
+        }
+        
+        if (teseract[0] >= 0 && teseract[0] < 32) {
+            //Nothing xD
+        }
+        else if (teseract[0] >= 32) {
+            teseract[0] = teseract[0] % 32
+        }
+        else if (teseract[0] < 0 && teseract[0] > -32) {
+            teseract[0] += 32
+        }
+        else {
+            console.log("Weird bug (T, 0)")
+            teseract[0] = 0
+        }
+    }
+
     if (direction[0] >= 4 || direction[0] < 0) {
         direction[0] = 0
         console.log("Weird bug (S, D)")
@@ -286,7 +389,11 @@ function movementLogic() {
 
     if (direction[1] >= 4 || direction[1] < 0) {
         direction[1] = 0
-        console.log("Weird bug (S, D)")
+        console.log("Weird bug (C, D)")
+    }
+    if (direction[2] >= 4 || direction[2] < 0) {
+        direction[2] = 0
+        console.log("Weird bug (T, D)")
     }
     pointCollecting();
     drawMap()
@@ -309,7 +416,14 @@ function pointCollecting() {
             break;
         }
     }
-    scoreBoard.innerHTML = "S " + pointScore[0] + " - " + pointScore[1] + " C"
+    for (var i = 0; i < pointPosition.length; i++) {
+        if (teseract[0] == pointPosition[i][0] && teseract[1] == pointPosition[i][1]) {
+            pointScore[2]++
+            pointPosition.splice(i, 1)
+            break;
+        }
+    }
+    scoreBoard.innerHTML = "S " + pointScore[0] + " - T " + pointScore[2] + " - C " + pointScore[1]  
 }
 //Basic logic for block placing
 function blockPlacement() {
