@@ -1,3 +1,15 @@
+//Variable elements
+
+var canTouch = true //Allows touching
+
+var timeLeft = 120 //Time limit
+
+var timeLimit = true //Sets a time limit
+
+var pointSpawnTime = 1250 //Time a point spawns in ms
+
+var pointEntityLimit = 16 //Max amount of points on screen
+
 //Calls the canvas and elements onto JS
 
 var mainMap = document.getElementById("map");
@@ -5,10 +17,6 @@ var m = mainMap.getContext("2d");
 
 var scoreBoard = document.getElementById("scoreboard");
 var timeBoard = document.getElementById("time");
-
-//Determines if the gamemode allows touching
-
-var canTouch = true
 
 //It's a square so it is delimited by vertical space
 
@@ -21,7 +29,10 @@ mainMap.width = Math.floor(window.innerHeight / 32) * 32 + 2
 var mapLength = Math.floor(window.innerHeight / 32) * 32 + 2
 
 var tileSpace = (mapLength - 2) / 32
+
 var time = 0
+
+var timeOver = false
 //Records where the points has spawned
 
 var pointPosition = []
@@ -46,7 +57,7 @@ var gameStarted = false
 
 //Event Listener (Keyboard)
 
-document.addEventListener('keydown', playerMovement)
+document.addEventListener('keydown', playerMovement, true)
 
 //Just to clear all that the game needs to start
 function startGame() {
@@ -81,6 +92,12 @@ function drawMap() {
         m.stroke()
     }
 
+    if (timeLimit == true) {
+        timeBoard.innerHTML = Math.floor(timeLeft / 60) + ":" + String(timeLeft % 60).padStart(2, "0")
+    }
+    else {
+        timeBoard.innerHTML = Math.floor(time / 60) + ":" + String(time % 60).padStart(2, "0")
+    }
     drawPlayers();
 }
 
@@ -150,7 +167,7 @@ function drawHelmet() {
 //Draws the points
 
 function drawPoints() {
-    m.fillStyle = "#0000FF"
+    m.fillStyle = "#FFFFFF"
     for (var a = 0; a < (pointPosition.length); a++) {
         m.fillRect(pointPosition[a][0] * tileSpace + 2, pointPosition[a][1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
     }
@@ -196,8 +213,9 @@ function playerMovement() {
 
     movementLogic()
     if (gameStarted == false) {
-        setInterval(pointSpawner, 1500)
-        setInterval(trackTime, 1000)
+        pointInterval = setInterval(pointSpawner, pointSpawnTime)
+        timeInterval = setInterval(trackTime, 1000)
+
         gameStarted = true
     }
 }
@@ -299,7 +317,7 @@ function blockPlacement() {
 }
 
 function pointSpawner() {
-    if (!(pointPosition.length >= 16)) {
+    if (!(pointPosition.length >= pointEntityLimit)) {
         pointPosition.push([Math.floor(Math.random() * 32), Math.floor(Math.random() * 32)])
         
 
@@ -313,16 +331,32 @@ function pointSpawner() {
             }
         }
 
-        m.fillStyle = "#0000FF"
+        m.fillStyle = "#FFFFFF"
         for (var a = 0; a < (pointPosition.length); a++) {
             m.fillRect(pointPosition[a][0] * tileSpace + 2, pointPosition[a][1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
         }
+    }
+
+    if (timeOver == true) {
+        clearInterval(pointInterval)
     }
 }
 
 function trackTime() {
     time++
-    timeBoard.innerHTML = Math.floor(time / 60) + ":" + String(time % 60).padStart(2, "0")
+
+    if (timeLimit == true) {
+        timeLeft--
+        timeBoard.innerHTML = Math.floor(timeLeft / 60) + ":" + String(timeLeft % 60).padStart(2, "0")
+    }
+    else {
+        timeBoard.innerHTML = Math.floor(time / 60) + ":" + String(time % 60).padStart(2, "0")
+    }
+    if (timeLeft <= 0) {
+        timeOver = true;
+        clearInterval(timeInterval)
+        clearInterval(pointInterval)
+    }
 }
 
 startGame()
