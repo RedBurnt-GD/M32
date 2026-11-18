@@ -1,16 +1,28 @@
 //Variable elements
 
-var canTouch = true //Allows touching
+var canTouch = false //Allows touching
 
-var timeLeft = 120 //Time limit
+var timeLeft = 150 //Time limit
 
 var timeLimit = true //Sets a time limit
 
-var pointSpawnTime = 1250 //Time a point spawns in ms
+var pointSpawnTime = 1000 //Time a point spawns in ms
 
-var pointEntityLimit = 16 //Max amount of points on screen
+var pointExpirationDate = 10 //Time a point expires in seconds (also serves as a cap)
 
 var allow3Players = true //Allows a third player (WASD = IJKL)
+
+var boardSize = 32 //Board size (ofc recommended is 32)
+
+var backgroundColor = "#222222"
+var quadrilleColor = "#DDDDDD"
+
+var playersColorsIdle = ["#00BB00", "#BB0000", "#0000BB"] //Colors of the players when idle
+
+var playersColorsLit = ["#2EFF00","#FF2E00","#002EFF"] //Second implementation of the shine mechanic
+
+
+//Code. Do not touch below here
 
 //Calls the canvas and elements onto JS
 
@@ -22,32 +34,51 @@ var timeBoard = document.getElementById("time");
 
 //It's a square so it is delimited by vertical space
 
-mainMap.height = Math.floor(window.innerHeight / 32) * 32 + 2
-mainMap.width = Math.floor(window.innerHeight / 32) * 32 + 2
+mainMap.height = Math.floor(window.innerHeight / boardSize) * boardSize + 2
+mainMap.width = Math.floor(window.innerHeight / boardSize) * boardSize + 2
 
+//Implemetation of the shine mechanic: 
+//Intrinsic "shine" value of every cell on the board
+
+var mapShine = []
+var fillerMatrix = [] //Only helps make the mapShine quadrille
+for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j < boardSize; j++) {
+        fillerMatrix.push(0)
+    }
+    mapShine.push(fillerMatrix)
+    fillerMatrix = []
+}
+console.log(mapShine)
 //Kinda redundant but may help
 //The length of the square itself
 
-var mapLength = Math.floor(window.innerHeight / 32) * 32 + 2
+var mapLength = Math.floor(window.innerHeight / boardSize) * boardSize + 2
 
-var tileSpace = (mapLength - 2) / 32
+var tileSpace = (mapLength - 2) / boardSize
 
 var time = 0
 
-var timeOver = false
-//Records where the points has spawned
+var shineTime = 150
 
-var pointPosition = []
+var truePlayerColors = ["#00BB00", "#BB0000", "#0000BB"]
+
+var timeOver = false
 
 //The R2 positions of the players
-//Btw cube and square are the names of the players
+//Btw square, cube and teseract (S,C,T) are the names of the players
 
-var square = [7, 7] 
-var cube = [24, 24]
-var teseract = [-32, -32]
+let pointX;
+let pointY;
+
+var startingPositions = [[Math.floor(boardSize / 4) - 1, Math.floor(boardSize / 4) - 1], [Math.floor(boardSize * 3 / 4) - 1, Math.floor(boardSize * 3 / 4) - 1], [-boardSize, -boardSize]]
+var square = [Math.floor(boardSize / 4) - 1, Math.floor(boardSize / 4) - 1] 
+var cube = [Math.floor(boardSize * 3 / 4) - 1, Math.floor(boardSize * 3 / 4) - 1]
+var teseract = [-boardSize, -boardSize]
 
 if (allow3Players == true) {
-    var teseract = [24, 7]
+    var teseract = [Math.floor(boardSize * 3 / 4) - 1, Math.floor(boardSize / 4) - 1]
+    startingPositions[2] = [Math.floor(boardSize * 3 / 4) - 1, Math.floor(boardSize / 4) - 1]
 }
 //Direction square and cube are facing (WASD = 0123)
 
@@ -74,11 +105,11 @@ function startGame() {
 function drawMap() {
     m.beginPath()
 
-    m.strokeStyle = "#000000";
+    m.strokeStyle = quadrilleColor;
 
     //Gotta choose a color
 
-    m.fillStyle = "#A0A0FF";
+    m.fillStyle = backgroundColor;
 
     //Clears the screen
     m.fillRect(0, 0, mapLength, mapLength)
@@ -86,13 +117,13 @@ function drawMap() {
     //Makes the grid
 
 
-    for (var i = 0; i <= 32; i++) {
+    for (var i = 0; i <= boardSize; i++) {
         m.moveTo(i * tileSpace + 1, 0)
         m.lineTo(i * tileSpace + 1, mapLength)
         m.stroke()
         m.fillRect(i * tileSpace + 2, 2, tileSpace - 2,  tileSpace - 2)
     }
-    for (var j = 0; j <= 32; j++) {
+    for (var j = 0; j <= boardSize; j++) {
         m.moveTo(0, j * tileSpace + 1)
         m.lineTo(mapLength, j * tileSpace + 1)
         m.stroke()
@@ -105,16 +136,30 @@ function drawMap() {
         timeBoard.innerHTML = Math.floor(time / 60) + ":" + String(time % 60).padStart(2, "0")
     }
     drawPlayers();
+
+    //Making it VERY CLEAR that the points are now a property of the map tiles themselves
+
+    for (let y = 0; y < mapShine.length; y++) {
+        for (let x = 0; x < mapShine.length; x++) {
+            if (mapShine[y][x] >= pointExpirationDate) {
+                mapShine[y][x] = 0
+            }
+            else if (mapShine[y][x] != 0) {
+                m.fillStyle = "#" + (Math.ceil((1 - (0.8 * mapShine[y][x] / pointExpirationDate)) * 255)).toString(16) + (Math.ceil((1 - (0.8 * mapShine[y][x] / pointExpirationDate)) * 255)).toString(16) + (Math.ceil((1 - (0.8 * mapShine[y][x] / pointExpirationDate)) * 255)).toString(16)
+                m.fillRect(x * tileSpace + 2, y * tileSpace + 2, tileSpace - 2, tileSpace - 2)
+            }
+        }
+    }
 }
 
 //Makes the players (IDK why I separated them)
 
 function drawPlayers() {
-    m.fillStyle = "#00FF00"
+    m.fillStyle = truePlayerColors[0]
     m.fillRect(square[0] * tileSpace + 2, square[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
-    m.fillStyle = "#FF0000"
+    m.fillStyle = truePlayerColors[1]
     m.fillRect(cube[0] * tileSpace + 2, cube[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
-    m.fillStyle = "#0000FF"
+    m.fillStyle = truePlayerColors[2]
     m.fillRect(teseract[0] * tileSpace + 2, teseract[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
 
     //Case where both players are in the same tile
@@ -124,9 +169,13 @@ function drawPlayers() {
             m.fillRect(square[0] * tileSpace + 2, square[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
         }
         else {
-            square = [7, 7];
-            cube = [24, 24];
-            teseract = [24, 7];
+            square[0] = startingPositions[0][0];
+            square[1] = startingPositions[0][1];
+            cube[0] = startingPositions[1][0];
+            cube[1] = startingPositions[1][1];
+            teseract[0] = startingPositions[2][0];
+            teseract[1] = startingPositions[2][1];
+            pointCollecting()
             drawMap()
         }
     }
@@ -136,8 +185,11 @@ function drawPlayers() {
             m.fillRect(square[0] * tileSpace + 2, square[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
         }
         else {
-            square = [7, 7];
-            cube = [24, 24];
+            square[0] = startingPositions[0][0];
+            square[1] = startingPositions[0][1];
+            cube[0] = startingPositions[1][0];
+            cube[1] = startingPositions[1][1];
+            pointCollecting()
             drawMap()
         }
     }
@@ -147,8 +199,11 @@ function drawPlayers() {
             m.fillRect(square[0] * tileSpace + 2, square[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
         }
         else {
-            square = [7, 7];
-            cube = [24, 24];
+            square[0] = startingPositions[0][0];
+            square[1] = startingPositions[0][1];
+            teseract[0] = startingPositions[2][0];
+            teseract[1] = startingPositions[2][1];
+            pointCollecting()
             drawMap()
         }
     }
@@ -158,75 +213,69 @@ function drawPlayers() {
             m.fillRect(cube[0] * tileSpace + 2, cube[1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
         }
         else {
-            square = [7, 7];
-            cube = [24, 24];
+            teseract[0] = startingPositions[2][0];
+            teseract[1] = startingPositions[2][1];
+            cube[0] = startingPositions[1][0];
+            cube[1] = startingPositions[1][1];
             drawMap()
+            pointCollecting()
         }
     }
 
     drawHelmet()
-    drawPoints()
 }
 
 //Helps see in which direction you're going (Super unoptimized btw)
+//Also lacks the potential of customization by letting the player change it
 
 function drawHelmet() {
     m.fillStyle = "#0000FF"
 
     switch (direction[0]) {
     case 0:
-        m.fillRect(square[0] * tileSpace + 4, square[1] * tileSpace + 4, tileSpace - 6, 2)
+        m.fillRect(square[0] * tileSpace + 4, square[1] * tileSpace + 4, tileSpace - 6, Math.ceil(tileSpace / 16))
         break;
     case 1:
-        m.fillRect(square[0] * tileSpace + 4, square[1] * tileSpace + 4, 2, tileSpace - 6)
+        m.fillRect(square[0] * tileSpace + 4, square[1] * tileSpace + 4, Math.ceil(tileSpace / 16), tileSpace - 6)
         break;
     case 2:
-        m.fillRect(square[0] * tileSpace + 4, square[1] * tileSpace + (tileSpace - 4), tileSpace - 6, 2)
+        m.fillRect(square[0] * tileSpace + 4, square[1] * tileSpace + (tileSpace - Math.ceil(tileSpace / 8)), tileSpace - 6, Math.ceil(tileSpace / 16))
         break;
     case 3:
-        m.fillRect(square[0] * tileSpace + (tileSpace - 4), square[1] * tileSpace + 4, 2, tileSpace - 6)
+        m.fillRect(square[0] * tileSpace + (tileSpace - Math.ceil(tileSpace / 8)), square[1] * tileSpace + 4, Math.ceil(tileSpace / 16), tileSpace - 6)
         break;
     }
 
     m.fillStyle = "#00FF00"
     switch (direction[1]) {
         case 0:
-            m.fillRect(cube[0] * tileSpace + 4, cube[1] * tileSpace + 4, tileSpace - 6, 2)
+            m.fillRect(cube[0] * tileSpace + 4, cube[1] * tileSpace + 4, tileSpace - 6, Math.ceil(tileSpace / 16))
             break;
         case 1:
-            m.fillRect(cube[0] * tileSpace + 4, cube[1] * tileSpace + 4, 2, tileSpace - 6)
+            m.fillRect(cube[0] * tileSpace + 4, cube[1] * tileSpace + 4, Math.ceil(tileSpace / 16), tileSpace - 6)
             break;
         case 2:
-            m.fillRect(cube[0] * tileSpace + 4, cube[1] * tileSpace + (tileSpace - 4), tileSpace - 6, 2)
+            m.fillRect(cube[0] * tileSpace + 4, cube[1] * tileSpace + (tileSpace - Math.ceil(tileSpace / 8)), tileSpace - 6, Math.ceil(tileSpace / 16))
             break;
         case 3:
-            m.fillRect(cube[0] * tileSpace + (tileSpace - 4), cube[1] * tileSpace + 4, 2, tileSpace - 6)
+            m.fillRect(cube[0] * tileSpace + (tileSpace - Math.ceil(tileSpace / 8)), cube[1] * tileSpace + 4, Math.ceil(tileSpace / 16), tileSpace - 6)
             break;
     }
 
     m.fillStyle = "#FF0000"
     switch (direction[2]) {
         case 0:
-            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + 4, tileSpace - 6, 2)
+            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + 4, tileSpace - 6, Math.ceil(tileSpace / 16))
             break;
         case 1:
-            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + 4, 2, tileSpace - 6)
+            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + 4, Math.ceil(tileSpace / 16), tileSpace - 6)
             break;
         case 2:
-            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + (tileSpace - 4), tileSpace - 6, 2)
+            m.fillRect(teseract[0] * tileSpace + 4, teseract[1] * tileSpace + (tileSpace - Math.ceil(tileSpace / 8)), tileSpace - 6, Math.ceil(tileSpace / 16))
             break;
         case 3:
-            m.fillRect(teseract[0] * tileSpace + (tileSpace - 4), teseract[1] * tileSpace + 4, 2, tileSpace - 6)
+            m.fillRect(teseract[0] * tileSpace + (tileSpace - Math.ceil(tileSpace / 8)), teseract[1] * tileSpace + 4, Math.ceil(tileSpace / 16), tileSpace - 6)
             break;
-    }
-}
-
-//Draws the points
-
-function drawPoints() {
-    m.fillStyle = "#FFFFFF"
-    for (var a = 0; a < (pointPosition.length); a++) {
-        m.fillRect(pointPosition[a][0] * tileSpace + 2, pointPosition[a][1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
     }
 }
 
@@ -296,56 +345,56 @@ function playerMovement() {
 //Advanced movement
 
 function movementLogic() {
-    if (square[1] >= 0 && square[1] < 32) {
+    if (square[1] >= 0 && square[1] < boardSize) {
         //Nothing xD
     }
-    else if (square[1] >= 32) {
-        square[1] = square[1] % 32
+    else if (square[1] >= boardSize) {
+        square[1] = square[1] % boardSize
     }
-    else if (square[1] < 0 && square[1] > -32) {
-        square[1] += 32
+    else if (square[1] < 0 && square[1] > -boardSize) {
+        square[1] += boardSize
     }
     else {
         console.log("Weird bug (S, 1)")
         square[1] = 0
     }
 
-    if (square[0] >= 0 && square[0] < 32) {
+    if (square[0] >= 0 && square[0] < boardSize) {
         //Nothing xD
     }
-    else if (square[0] >= 32) {
-        square[0] = square[0] % 32
+    else if (square[0] >= boardSize) {
+        square[0] = square[0] % boardSize
     }
-    else if (square[0] < 0 && square[0] > -32) {
-        square[0] += 32
+    else if (square[0] < 0 && square[0] > -boardSize) {
+        square[0] += boardSize
     }
     else {
         console.log("Weird bug (S, 0)")
         square[0] = 0
     }
 
-    if (cube[1] >= 0 && cube[1] < 32) {
+    if (cube[1] >= 0 && cube[1] < boardSize) {
         //Nothing xD
     }
-    else if (cube[1] >= 32) {
-        cube[1] = cube[1] % 32
+    else if (cube[1] >= boardSize) {
+        cube[1] = cube[1] % boardSize
     }
-    else if (cube[1] < 0 && cube[1] > -32) {
-        cube[1] += 32
+    else if (cube[1] < 0 && cube[1] > -boardSize) {
+        cube[1] += boardSize
     }
     else {
         console.log("Weird bug (C, 1)")
         cube[1] = 0
     }
 
-    if (cube[0] >= 0 && cube[0] < 32) {
+    if (cube[0] >= 0 && cube[0] < boardSize) {
         //Nothing xD
     }
-    else if (cube[0] >= 32) {
-        cube[0] = cube[0] % 32
+    else if (cube[0] >= boardSize) {
+        cube[0] = cube[0] % boardSize
     }
-    else if (cube[0] < 0 && cube[0] > -32) {
-        cube[0] += 32
+    else if (cube[0] < 0 && cube[0] > -boardSize) {
+        cube[0] += boardSize
     }
     else {
         console.log("Weird bug (C, 0)")
@@ -353,28 +402,28 @@ function movementLogic() {
     }
 
     if (allow3Players == true) { 
-        if (teseract[1] >= 0 && teseract[1] < 32) {
+        if (teseract[1] >= 0 && teseract[1] < boardSize) {
             //Nothing xD
         }
-        else if (teseract[1] >= 32) {
-            teseract[1] = teseract[1] % 32
+        else if (teseract[1] >= boardSize) {
+            teseract[1] = teseract[1] % boardSize
         }
-        else if (teseract[1] < 0 && teseract[1] > -32) {
-            teseract[1] += 32
+        else if (teseract[1] < 0 && teseract[1] > -boardSize) {
+            teseract[1] += boardSize
         }
         else {
             console.log("Weird bug (T, 1)")
             teseract[1] = 0
         }
         
-        if (teseract[0] >= 0 && teseract[0] < 32) {
+        if (teseract[0] >= 0 && teseract[0] < boardSize) {
             //Nothing xD
         }
-        else if (teseract[0] >= 32) {
-            teseract[0] = teseract[0] % 32
+        else if (teseract[0] >= boardSize) {
+            teseract[0] = teseract[0] % boardSize
         }
-        else if (teseract[0] < 0 && teseract[0] > -32) {
-            teseract[0] += 32
+        else if (teseract[0] < 0 && teseract[0] > -boardSize) {
+            teseract[0] += boardSize
         }
         else {
             console.log("Weird bug (T, 0)")
@@ -402,54 +451,51 @@ function movementLogic() {
 //Checks point collection
 
 function pointCollecting() {
-    for (var i = 0; i < pointPosition.length; i++) {
-        if (square[0] == pointPosition[i][0] && square[1] == pointPosition[i][1]) {
-            pointScore[0]++
-            pointPosition.splice(i, 1)
-            break;
-        }
+    if (mapShine[square[1]][square[0]] != 0) {
+        pointScore[0]++
+        mapShine[square[1]][square[0]] = 0
+        truePlayerColors[0] = playersColorsLit[0]
+        setTimeout(dimColors, shineTime)
     }
-    for (var i = 0; i < pointPosition.length; i++) {
-        if (cube[0] == pointPosition[i][0] && cube[1] == pointPosition[i][1]) {
-            pointScore[1]++
-            pointPosition.splice(i, 1)
-            break;
-        }
+
+    if (mapShine[cube[1]][cube[0]] != 0) {
+        pointScore[1]++
+        mapShine[cube[1]][cube[0]] = 0
+        truePlayerColors[1] = playersColorsLit[1]
+        setTimeout(dimColors, shineTime)
     }
-    for (var i = 0; i < pointPosition.length; i++) {
-        if (teseract[0] == pointPosition[i][0] && teseract[1] == pointPosition[i][1]) {
+    if (allow3Players == true ) {
+        if (mapShine[teseract[1]][teseract[0]] != 0) {
             pointScore[2]++
-            pointPosition.splice(i, 1)
-            break;
+            mapShine[teseract[1]][teseract[0]] = 0
+            truePlayerColors[2] = playersColorsLit[2]
+            setTimeout(dimColors, shineTime)
         }
     }
+
     scoreBoard.innerHTML = "S " + pointScore[0] + " - T " + pointScore[2] + " - C " + pointScore[1]  
 }
+
+function dimColors() {
+    truePlayerColors[0] = playersColorsIdle[0]
+    truePlayerColors[1] = playersColorsIdle[1]
+    truePlayerColors[2] = playersColorsIdle[2]
+    drawMap()
+}
+
 //Basic logic for block placing
 function blockPlacement() {
     //Haven't done nothing yet
 }
 
 function pointSpawner() {
-    if (!(pointPosition.length >= pointEntityLimit)) {
-        pointPosition.push([Math.floor(Math.random() * 32), Math.floor(Math.random() * 32)])
-        
 
-        for (var i = 0; i < (pointPosition.length - 1); i++) {
-            if (pointPosition[pointPosition.length - 1][0] == pointPosition[i][0]) {
-                if (pointPosition[pointPosition.length - 1][1] == pointPosition[i][1]) {
-                    console.log("Double spawn.")
-                    pointPosition.pop()
-                    pointSpawner()
-                }
-            }
-        }
+    pointX = Math.floor(Math.random() * boardSize)
+    pointY = Math.floor(Math.random() * boardSize)
 
-        m.fillStyle = "#FFFFFF"
-        for (var a = 0; a < (pointPosition.length); a++) {
-            m.fillRect(pointPosition[a][0] * tileSpace + 2, pointPosition[a][1] * tileSpace + 2, tileSpace - 2, tileSpace - 2)
-        }
-    }
+    mapShine[pointY][pointX]++
+
+    pointCollecting()
 
     if (timeOver == true) {
         clearInterval(pointInterval)
@@ -459,17 +505,27 @@ function pointSpawner() {
 function trackTime() {
     time++
 
+    drawMap()
+
+    for (let y = 0; y < boardSize; y++) {
+        for (let x = 0; x < boardSize; x++) {
+            if (mapShine[y][x] != 0) {
+                mapShine[y][x]++
+            }
+        } 
+    }
+
     if (timeLimit == true) {
         timeLeft--
         timeBoard.innerHTML = Math.floor(timeLeft / 60) + ":" + String(timeLeft % 60).padStart(2, "0")
+            if (timeLeft <= 0) {
+            timeOver = true;
+            clearInterval(timeInterval)
+            clearInterval(pointInterval)
+        }
     }
     else {
         timeBoard.innerHTML = Math.floor(time / 60) + ":" + String(time % 60).padStart(2, "0")
-    }
-    if (timeLeft <= 0) {
-        timeOver = true;
-        clearInterval(timeInterval)
-        clearInterval(pointInterval)
     }
 }
 
