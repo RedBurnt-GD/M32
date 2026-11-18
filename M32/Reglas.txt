@@ -1,0 +1,58 @@
+Juego de 2 o 3 jugadores, usa solo el teclado.
+Inspirado en los juegos Atari
+Ir mas allá de la izquierda moverá al jugador al extremo derecho, y así para todas las direcciones
+
+El jugador verde (S) se mueve usando las teclas WASD
+El jugador rojo (C) se mueve usando las flechas
+
+Si se habilita allow3Players, se añade un tercer jugador (T), que se mueve usando IJKL
+
+El objetivo del juego es ser el jugador que recolecte la mayor cantidad de puntos en un tiempo limite
+Por default, se tiene un tiempo limite de 150 segundos
+El tiempo limite se puede cambiar modificando la variable timeLeft
+Si se deshabilita timeLimit, el temporizador pasara a ser un cronometro
+
+El tiempo empezara a correr apenas algún jugador haga un movimiento.
+
+El tablero es de 32x32, de forma toroide, por lo cual no existe un limite.
+El tamaño del tablero se puede cambiar modificando la variable boardSize.
+Si dos jugadores ocupan la misma casilla, ambos regresarán a su casilla original, sin importar su posición
+Esto se programa con la intención de usarse como una mecánica.
+Si se habilita canTouch, cuando dos jugadores ocupen la misma casilla no pasará nada
+
+Puntos aparecerán cada segundo en una posición aleatoria del tablero
+El jugador que toque la misma casilla que un punto no muerto ganará un punto en el marcador de la derecha
+Se implementa una mecánica de brillo por unos milisegundos al jugador que consigue el punto
+Los puntos se irán oscureciendo, y permanecerán por 10 segundos antes de morir y desaparecer
+Se puede cambiar el tiempo de aparición de los puntos cambiando el valor de pointSpawnTime
+Se puede cambiar el tiempo de muerte de los puntos cambiando el valor de pointExpirationDate
+
+Cuando se acabe el tiempo, mostrado en el contador de la izquierda, dejarán de aparecer puntos.
+Los jugadores se podrán seguir moviendo en ese tiempo.
+
+Para volver a jugar, presione F5
+
+Usando colores hexadecimales (#XXXXXX) se pueden modificar los colores de:
+
+El color de fondo del tablero (backgroundColor)
+El color de las líneas de la cuadrilla (quadrilleColor)
+El color de los jugadores (en el orden S C T) (playersColorsIdle)
+El color de los jugadores cuando brillan (playersColorsLit)
+
+
+
+Resumen a profundidad de variables customizables:
+
+canTouch: bool: Permite que dos jugadores habiten la misma casilla
+timeLeft: int: Si timeLimit = true, es el tiempo del temporizador en segundos. Poner positivo
+timeLimit: bool: Dicta si el juego tendrá un tiempo limite o no
+pointSpawnTime: int: El tiempo en ms que tarda un punto en aparecer después del otro. Poner positivo
+pointExpirationDate: int: El tiempo en segundos que tarda un punto en morir. Poner positivo
+allow3Players: bool: Permite que hayan dos jugadores en vez de 3 (el tercer jugador se mueve usando IJKL)
+boardSize: int: La cantidad de casillas que tiene el tablero. Poner positivo
+backgroundColor: string: Codigo hexadecimal que dicta el color del fondo del tablero. No se recomienda poner
+escalas de gris debido al color que toman los puntos al ir muriendo
+quadrilleColor: string: Codigo hexadecimal que dicta el color de los bordes de las casillas
+playersColorsIdle: array: Codigos hexadecimales que dictan el color de los jugadores
+playersColorsLit: array: Codigos hexadecimales que dictan el color de los jugadores cuando se iluminan
+
